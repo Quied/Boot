@@ -77,22 +77,19 @@ int main() {
 		// Parsing file
 		report.ParseFromFile();
 
-		std::thread th1([&] {
-			for (int i = 0; i < ParsingData.size() / 2; i++) {
-				report.ParseString(ParsingData[i]);
-			}
-		});
+		size_t Threads = std::thread::hardware_concurrency();
 
-		std::thread th2([&] {
-			for (int i = ParsingData.size() / 2; i < ParsingData.size(); i++) {
-				report.ParseString(ParsingData[i]);
-			}
-		});
+		for (int i = 0; i < Threads; i++) {
+			ThreadsDelay.emplace_back([&, i]() {
+				for (int j = i; j < ParsingData.size(); j += Threads) {
+					report.ParseString(ParsingData[j]);
+				}
+			});
+		}
 
+		for (auto &el : ThreadsDelay) {
+			el.join(); }
 
-
-		th1.join();
-		th2.join();
 
 	 loger.WriteToFile();
 	 auto end = std::chrono::steady_clock::now();
